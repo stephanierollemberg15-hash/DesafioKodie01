@@ -1,0 +1,290 @@
+{
+  "name": "KODIE - Desafio 1 (Workflow Didático Simplificado)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### 🎓 KODIE - Starter Kit Didático (Desafio 1)\n\n**Fluxo de Triagem e Classificação com IA e n8n:**\n1. **1. Receber Mensagem:** Webhook de entrada que recebe o texto.\n2. **2. Normalizar Entrada:** Garante que o campo `text` exista no formato esperado.\n3. **3. Chamar API Express:** Envia o texto para a API Node.js (que chama o Gemini e salva no SQLite).\n4. **4. Decidir Prioridade:** Roteador (Switch) que verifica se a prioridade é Urgente (Crítica/Alta) ou Normal.\n5. **5/6. Definir SLA:** Atribui tempo de SLA e canal de notificação conforme a criticidade.\n6. **7. Responder ao Webhook:** Devolve o JSON estruturado unificado.",
+        "height": 260,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -340
+      ],
+      "id": "note-didatica-kodie",
+      "name": "Guia do Aluno"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "triagem-light",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -100,
+        -40
+      ],
+      "id": "node-1-webhook",
+      "name": "1. Receber Mensagem (Webhook)",
+      "webhookId": "triagem-light-webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fld-text",
+              "name": "text",
+              "value": "={{ $json.body.text || $json.text || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        140,
+        -40
+      ],
+      "id": "node-2-normalizar",
+      "name": "2. Normalizar Entrada (Edit Fields)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/analyze",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text }) }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        380,
+        -40
+      ],
+      "id": "node-3-http-api",
+      "name": "3. Chamar API Express (Gemini)"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.prioridade }}",
+                    "rightValue": "Crítica",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  },
+                  {
+                    "leftValue": "={{ $json.data.prioridade }}",
+                    "rightValue": "Alta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "or"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        620,
+        -40
+      ],
+      "id": "node-4-switch",
+      "name": "4. Decidir Prioridade (Switch)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sla-urgente",
+              "name": "sla",
+              "value": "30 minutos (SLA Urgente)",
+              "type": "string"
+            },
+            {
+              "id": "alerta-urgente",
+              "name": "alerta",
+              "value": "#canal-emergencia",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        860,
+        -140
+      ],
+      "id": "node-5-sla-urgente",
+      "name": "5. Definir SLA Urgente (30 min)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sla-normal",
+              "name": "sla",
+              "value": "4 horas (SLA Normal)",
+              "type": "string"
+            },
+            {
+              "id": "alerta-normal",
+              "name": "alerta",
+              "value": "#fila-geral",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        860,
+        60
+      ],
+      "id": "node-6-sla-normal",
+      "name": "6. Definir SLA Normal (4 horas)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"orquestrador\": \"n8n\",\n  \"sla\": \"{{ $json.sla }}\",\n  \"canal_alerta\": \"{{ $json.alerta }}\",\n  \"data\": {{ JSON.stringify($('3. Chamar API Express (Gemini)').item.json.data) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        -40
+      ],
+      "id": "node-7-respond",
+      "name": "7. Responder ao Frontend (Respond to Webhook)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "1. Receber Mensagem (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "2. Normalizar Entrada (Edit Fields)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Normalizar Entrada (Edit Fields)": {
+      "main": [
+        [
+          {
+            "node": "3. Chamar API Express (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Chamar API Express (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "4. Decidir Prioridade (Switch)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Decidir Prioridade (Switch)": {
+      "main": [
+        [
+          {
+            "node": "5. Definir SLA Urgente (30 min)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "6. Definir SLA Normal (4 horas)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Definir SLA Urgente (30 min)": {
+      "main": [
+        [
+          {
+            "node": "7. Responder ao Frontend (Respond to Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Definir SLA Normal (4 horas)": {
+      "main": [
+        [
+          {
+            "node": "7. Responder ao Frontend (Respond to Webhook)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,110 @@
+# PROMPT MESTRE: Criação do Starter Kit / Versão Light (KODIE - Desafio 1)
+
+Você é um Arquiteto de Software e Educador Técnico especialista em Node.js, Inteligência Artificial e Automação com n8n.
+Sua missão é construir do zero uma **Versão Light / Starter Kit Didático** do projeto KODIE Desafio 1 (Triagem Inteligente de Mensagens Corporativas com IA e Automação).
+
+Use a pasta do projeto completo atual fornecida como **referência de contexto técnico**, mas **NÃO duplique suas complexidades**. Esta versão deve ser a mais simples, limpa e didática possível, servindo como o **ponto de partida ideal (starter kit)** para alunos iniciantes entenderem a mecânica e cumprirem 100% dos requisitos do desafio sem se perderem em regras de interface ou infraestrutura.
+
+---
+
+## 🎯 Requisitos Obrigatórios do Desafio que DEVEM ser Atendidos:
+1. **API em Node.js com Express:** Endpoint `/api/analyze` que recebe um texto, aciona a IA e retorna a análise.
+2. **Integração com IA (Google Gemini):** Engenharia de prompt estrita com retorno EXCLUSIVO em JSON estruturado (categoria, prioridade, resumo, pontos_chave, acao_recomendada, resposta_sugerida).
+3. **Persistência de Dados (SQLite):** Gravação automática de cada triagem no banco de dados local SQLite.
+4. **Fluxo de Automação no n8n:** Webhook de entrada -> Preparação de dados -> Chamada HTTP à API Express -> Roteamento condicional de prioridade (Switch) -> Definição de SLA (urgente vs normal) -> Resposta ao Webhook.
+5. **Interface Web Funcional:** Tela limpa para o usuário digitar uma mensagem, submeter e visualizar o resultado estruturado.
+
+---
+
+## ✂️ O que DEVE ser Simplificado / O que NÃO deve entrar:
+- **SEM Upload de Arquivos / PDF:** Nada de PDF.js, drag-and-drop ou limites de 500 KB. Apenas uma caixa de texto (`<textarea>`).
+- **SEM Abas Múltiplas:** Sem aba de histórico, sem aba de configurações, sem abas de arquivos. Uma **única tela limpa**.
+- **SEM Configuração de Chaves ou URLs na Interface:** A chave do Gemini (`GEMINI_API_KEY`) e a porta ficam **100% no arquivo `.env` do backend**. A interface não possui inputs de chave nem avisos de proteção/readonly.
+- **SEM Telas Complexas de Histórico:** O banco SQLite grava a análise silenciosamente em segundo plano (para cumprir o critério do desafio), sem necessidade de criar listagens complexas na tela.
+- **Layout Minimalista:** Não use o design escuro e pesado de dashboard corporativo da versão completa. Use um layout limpo, moderno, com fundo claro, tipografia legível e botões intuitivos.
+
+---
+
+## 📁 Estrutura de Arquivos a ser Criada:
+
+```text
+desafio1-light/
+├── backend/
+│   ├── src/
+│   │   ├── server.js          # Servidor Express limpo + rotas /health e /api/analyze
+│   │   ├── gemini.js          # Serviço do Google Gemini (@google/generative-ai) com fallback simples
+│   │   └── database.js        # SQLite nativo (node:sqlite) que cria tabela e insere a análise
+│   ├── .env.example           # Exemplo: PORT=3001 e GEMINI_API_KEY=
+│   ├── .env                   # Arquivo local para execução
+│   └── package.json           # Dependências essenciais (express, cors, dotenv, @google/generative-ai)
+├── frontend/
+│   ├── index.html             # Tela única com Textarea + 3 botões de exemplo + Card de Resultado
+│   ├── style.css              # Estilos limpos e modernos (ou Tailwind CSS via CDN)
+│   └── app.js                 # Requisição fetch simples com indicador de carregamento
+├── n8n/
+│   ├── workflow_didatico.json # Fluxo do n8n formatado com nós numerados didaticamente
+│   └── README.md              # Como importar o fluxo no n8n em 2 passos
+├── .gitignore                 # node_modules, .env, *.sqlite
+└── README.md                  # Guia rápido de execução em 4 passos (para iniciantes)
+```
+
+---
+
+## 📝 Detalhamento da Implementação:
+
+### 1. Backend (`backend/`):
+- **`src/gemini.js`:**
+  - Instancia `GoogleGenerativeAI(process.env.GEMINI_API_KEY)`.
+  - Configura a `systemInstruction` em formato JSON obrigatório.
+  - Tenta o modelo preferencial (ex: `gemini-3.5-flash-lite` ou `gemini-2.5-flash`) com fallback simples se der erro.
+  - Retorna o objeto JavaScript parseado.
+- **`src/database.js`:**
+  - Usa o SQLite nativo do Node.js (`node:sqlite`).
+  - Cria automaticamente a tabela `analyses (id, input_text, categoria, prioridade, resumo, resposta_sugerida, created_at)`.
+  - Exporta função `saveAnalysis(inputText, result)` que insere o registro.
+- **`src/server.js`:**
+  - Configura Express com `cors()` e `express.json()`.
+  - Rota `GET /health`: retorna `{ status: "ok" }`.
+  - Rota `POST /api/analyze`: valida se `req.body.text` existe, chama `analyzeText()`, chama `saveAnalysis()` e retorna `{ success: true, data: result }`.
+  - Serve também os arquivos estáticos da pasta `../frontend` para facilitar o teste unificado.
+
+### 2. Frontend (`frontend/`):
+- **Layout de Tela Única:**
+  - Cabeçalho: Título didático *"Triagem Automática de Mensagens Corporativas (com IA e n8n)"*.
+  - Seção de Entrada:
+    - Textarea espaçoso com placeholder explicativo.
+    - 3 botões de preenchimento rápido de 1 clique:
+      1. *Cobrança Indevida (Urgente/Financeiro)*
+      2. *Falha Crítica no Sistema (Urgente/Suporte)*
+      3. *Dúvida sobre Planos (Normal/Comercial)*
+    - Botão principal: `[ Analisar Mensagem ]` (com estado de loading: desabilita e mostra "Analisando com IA...").
+  - Seção de Saída (Cards de Resultado):
+    - Só aparece após o processamento.
+    - Badges claros de **Categoria**, **Prioridade** (com cor dinâmica: Vermelho para Crítica/Alta, Verde para Normal/Baixa) e **SLA de Atendimento** retornado pelo n8n.
+    - Bloco de **Resumo da Demanda**.
+    - Bloco destacado com a **Resposta Sugerida ao Cliente** e botão de copiar.
+
+### 3. Orquestrador n8n (`n8n/workflow_didatico.json`):
+- Crie o fluxo JSON do n8n totalmente funcional com os seguintes nós renomeados de forma estritamente didática:
+  1. **`1. Receber Mensagem (Webhook)`**: Método POST, modo `Using 'Respond to Webhook' Node`.
+  2. **`2. Normalizar Entrada (Edit Fields)`**: Garante os campos `text` e metadados.
+  3. **`3. Chamar API Express (Gemini)`**: Nó HTTP Request chamando `http://localhost:3001/api/analyze` ou URL configurada, usando `{{ JSON.stringify({ text: $json.text }) }}` no corpo JSON.
+  4. **`4. Decidir Prioridade (Switch)`**: Avalia `{{ $json.data.prioridade }}` (Saída 0: Crítica/Alta | Saída 1: Padrão/Média/Baixa).
+  5. **`5. Definir SLA Urgente (30 min)`**: Nó Edit Fields atribuindo `sla: "30 minutos"` e `alerta: "#canal-emergencia"`.
+  6. **`6. Definir SLA Normal (4 horas)`**: Nó Edit Fields atribuindo `sla: "4 horas"` e `alerta: "#fila-geral"`.
+  7. **`7. Responder ao Frontend (Respond to Webhook)`**: Devolve o JSON unificado com os dados da IA + SLA para o frontend.
+
+### 4. Documentação (`README.md`):
+- Guia passo a passo extremamente simples e amigável:
+  1. Como clonar e entrar na pasta.
+  2. Como configurar a `GEMINI_API_KEY` no arquivo `.env`.
+  3. Como rodar `npm install` e `npm start`.
+  4. Como importar o fluxo no n8n.
+  5. Como testar no navegador.
+
+---
+
+## 🚀 Instruções de Execução:
+- Todo o código deve ser comentado em português, explicando o "porquê" de cada bloco essencial.
+- Garanta que as dependências do `package.json` sejam mínimas e rodem imediatamente com `npm install && npm start`.
+- Crie todos os arquivos da estrutura diretamente no workspace.

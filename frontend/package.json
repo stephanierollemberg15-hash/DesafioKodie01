@@ -1,0 +1,9 @@
+{
+  "name": "kodie-desafio1-light-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Atalho para inicializar o backend a partir da pasta frontend",
+  "scripts": {
+    "start": "npm start --prefix ../backend"
+  }
+}

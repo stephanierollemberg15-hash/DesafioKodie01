@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KODIE | Triagem Inteligente com IA & n8n</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- Cabeçalho Didático -->
+    <header class="header">
+      <div class="badge-starter">KODIE STARTER KIT • DESAFIO 1</div>
+      <h1>Triagem Automática de Mensagens</h1>
+      <p class="subtitle">Orquestração em tempo real: <strong>Frontend ➔ n8n ➔ Backend Express ➔ Gemini IA ➔
+          SQLite</strong></p>
+    </header>
+
+    <main class="main-content">
+      <!-- Seção de Entrada -->
+      <section class="card input-section">
+        <!-- Indicador do Modo n8n -->
+        <div class="n8n-mode-pill">
+          <span class="pill-dot"></span>
+          <span>Modo Oficial Ativo: <strong>Execução 100% via n8n Webhook</strong></span>
+        </div>
+
+        <label for="messageInput" class="section-label">
+          <span>Mensagem Corporativa</span>
+          <span class="hint">Cole um e-mail, chamado ou reclamação para testar</span>
+        </label>
+
+        <textarea id="messageInput" rows="5"
+          placeholder="Exemplo: Olá equipe, estou com um erro grave no checkout há 2 horas e os clientes não conseguem concluir as compras. Precisamos de ajuda urgente..."></textarea>
+
+        <!-- Botões de Preenchimento Rápido -->
+        <div class="quick-examples">
+          <span class="examples-title">Testes rápidos (1 clique):</span>
+          <div class="buttons-group">
+            <button type="button" class="btn-example" id="btnExCobranca">
+              💳 Cobrança Indevida
+            </button>
+            <button type="button" class="btn-example" id="btnExFalha">
+              🚨 Falha Crítica no Sistema
+            </button>
+            <button type="button" class="btn-example" id="btnExDuvida">
+              💬 Dúvida sobre Planos
+            </button>
+          </div>
+        </div>
+
+        <!-- Ação Principal -->
+        <div class="action-bar">
+          <button type="button" id="btnSubmit" class="btn-primary">
+            <span class="btn-text">⚡ Enviar para o n8n</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Estado de Carregamento -->
+      <div id="loadingState" class="loading-state hidden">
+        <div class="spinner"></div>
+        <p><strong>Orquestrando fluxo no n8n...</strong></p>
+        <span class="loading-subtext">Webhook acionado ➔ Normalizando dados ➔ Chamando Gemini ➔ Decidindo SLA</span>
+      </div>
+
+      <!-- Mensagem de Erro -->
+      <div id="errorAlert" class="error-alert hidden">
+        <span class="error-icon">⚠️</span>
+        <span id="errorMessage">Ocorreu um erro ao processar a mensagem no n8n.</span>
+      </div>
+
+      <!-- Seção de Saída / Resultado Estruturado -->
+      <section id="resultSection" class="card result-section hidden">
+        <div class="result-header">
+          <h2>Resultado da Triagem</h2>
+          <span class="source-tag" id="sourceTag">⚡ Processado via n8n</span>
+        </div>
+
+        <!-- Badges de Metadados -->
+        <div class="badges-row">
+          <div class="badge-item">
+            <span class="badge-label">Categoria</span>
+            <span class="badge badge-category" id="badgeCategoria">-</span>
+          </div>
+
+          <div class="badge-item">
+            <span class="badge-label">Prioridade</span>
+            <span class="badge badge-priority" id="badgePrioridade">-</span>
+          </div>
+
+          <div class="badge-item">
+            <span class="badge-label">Departamento</span>
+            <span class="badge badge-dept" id="badgeDepartamento">-</span>
+          </div>
+
+          <div class="badge-item">
+            <span class="badge-label">SLA (Definido pelo n8n)</span>
+            <span class="badge badge-sla" id="badgeSLA">-</span>
+          </div>
+        </div>
+
+        <!-- Resumo -->
+        <div class="result-block">
+          <h3>📌 Resumo Executivo</h3>
+          <p id="txtResumo" class="result-text">-</p>
+        </div>
+
+        <!-- Pontos Chave -->
+        <div class="result-block">
+          <h3>🔍 Pontos-Chave</h3>
+          <ul id="listPontosChave" class="result-list">
+            <li>Nenhum ponto registrado.</li>
+          </ul>
+        </div>
+
+        <!-- Ação Recomendada -->
+        <div class="result-block">
+          <h3>⚙️ Ação Operacional Recomendada</h3>
+          <p id="txtAcao" class="result-text highlight-box">-</p>
+        </div>
+
+        <!-- Resposta Sugerida com Botão de Copiar -->
+        <div class="result-block">
+          <div class="block-header-flex">
+            <h3>💬 Resposta Sugerida ao Cliente</h3>
+            <button type="button" id="btnCopyResponse" class="btn-secondary btn-copy">
+              📋 Copiar Resposta
+            </button>
+          </div>
+          <div id="txtResposta" class="response-box">-</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>KODIE Formação de Desenvolvedores IA • Starter Kit Desafio 1 (Orquestração n8n)</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
